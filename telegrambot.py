@@ -9,6 +9,13 @@ load_dotenv()
 bot = telebot.TeleBot(os.environ['TELEGRAM_BOT_TOKEN'])
 chat_id = os.environ['CHAT_ID']
 
+def send_message(message, link_preview=False, html=True):
+    bot.send_message(
+        chat_id,
+        message,
+        parse_mode='html' if html else None,
+        link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=not link_preview))
+
 #welcome message
 @bot.message_handler(func=lambda message: message.new_chat_members is not None)
 def welcome_new_user(message):
@@ -21,7 +28,7 @@ def welcome_new_user(message):
 #list of commands
 @bot.message_handler(commands=['help'])
 def send_help(message):
-    bot.send_message(message.chat.id, """
+    send_message("""
 You may use the following Commands:
 /supply
 /vhpsupply
@@ -32,17 +39,19 @@ You may use the following Commands:
 /international
 /projects
 /roadmap
-/media
+/social
 /whitepaper
-/buy
+/exchanges
 /guides
 /website
+/programs
+/rules
 """)
 
 #report
 @bot.message_handler(commands=['report'])
 def send_report(message):
-    bot.send_message(chat_id,"""
+    send_message("""
 Admins, someone needs to be banned
 @kuixihe @weleleliano @saleh_hawi @fifty2kph
 """)
@@ -51,60 +60,45 @@ Admins, someone needs to be banned
 #website
 @bot.message_handler(commands=['website'])
 def send_website(message):
-    bot.send_message(chat_id,"""
-http://koinos.io
-""")
+    send_message("https://koinos.io", True)
 
 
 #stake
 @bot.message_handler(commands=['stake'])
 def send_stake(message):
-    bot.send_message(chat_id,"""
-⚡Burn KOIN (similar to staking) for 1 year and earn 4-7% APR!
+    send_message("""
+🔥 Burn KOIN (similar to staking) for 1 year and earn 4-7% APR!
 
-⚡How does it work? See this video:
+❓ How does it work? See this video:
 https://www.youtube.com/watch?v=v9bhaNLuDms
 
-⚡Mining for KOIN with VHP
+⛏️ Mining for KOIN with VHP
 https://youtu.be/pa2kSYSdVnE?si=kxX4BBbjriL29x6m
 
-⚡Run your own Node:
+⌨️ Run your own Node:
 https://docs.koinos.io/validators/guides/running-a-node/
 
 --or--
 
 Join a Pool!
-https://fogata.io
-https://burnkoin.com
+<a href="https://fogata.io">Fogata</a>
+<a href="https://burnkoin.com">Burn Koin</a>
 """)
 
 #whitepaper
 @bot.message_handler(commands=['whitepaper'])
 def send_whitepaper(message):
-    bot.send_message(chat_id,"""
+    send_message("""
+📄 <a href="https://koinos.io/whitepaper/">Official Whitepaper</a>
 
-⚡Official Whitepaper: https://koinos.io/whitepaper/
-⚡Koin Press PodCast on White Paper: https://podcast.thekoinpress.com/episodes/the-koinos-whitepaper
-⚡Community Member Video: https://www.youtube.com/watch?v=v-qFFbDvV2c
-""")
+🎤️ <a href="https://podcast.thekoinpress.com/episodes/the-koinos-whitepaper">Koin Press PodCast on White Paper</a>
 
-#social
-@bot.message_handler(commands=['social'])
-def send_social(message):
-    bot.send_message(chat_id,"""
-
-⚡Official Discord: https://discord.gg/VqvRhfHFHH
-⚡Official Youtube: https://www.youtube.com/channel/UCamXqlj7q14TllcrCM0ikkw
-⚡Website: http://koinos.io
-⚡Claim Website: https://claim.koinos.io
-⚡X/Twitter: http://x.com/koinosnetwork
-⚡Youtube: http://youtube.com/koinosblockchain
-⚡Development Docs: http://docs.koinos.io
+▶️ <a href="https://www.youtube.com/watch?v=v-qFFbDvV2c">Community Member Video</a>
 """)
 
 
 #Get KOIN Virtual Supply
-def get_data1():
+def get_virtual_supply():
     url = 'https://checker.koiner.app/koin/virtual-supply'
     response = requests.get(url)
     data = response.json()
@@ -112,13 +106,15 @@ def get_data1():
 
 
 @bot.message_handler(commands=['supply'])
-def send_data1(message):
-    data = get_data1()
-    bot.send_message(message.chat.id, f'The Virtual Supply ($KOIN+$VHP) is: {data}. For more information, see https://medium.com/@kuixihe/demystifying-the-koinos-blockchain-marketcap-7bf0baaa70fe')
+def handle_supply(message):
+    data = get_virtual_supply()
+    send_message(f"""The Virtual Supply ($KOIN+$VHP) is: {data}.
+
+For more information, read about Koinos' <a href="https://docs.koinos.io/overview/tokenomics/">tokenomics!</a>""")
 
 
 #Get VHP Total Supply
-def get_data2():
+def get_vhp_supply():
     url = 'https://checker.koiner.app/vhp/total-supply'
     response = requests.get(url)
     data = response.json()
@@ -126,161 +122,173 @@ def get_data2():
 
 
 @bot.message_handler(commands=['vhpsupply'])
-def send_data2(message):
-    data = get_data2()
-    bot.send_message(message.chat.id, f'The Total Supply of $VHP is: {data}.')
+def handle_vhp_supply(message):
+    data = get_vhp_supply()
+    send_message(f"""The Total Supply of $VHP is: {data}.
+
+For more information, read about Koinos' <a href="https://docs.koinos.io/overview/tokenomics/">tokenomics!</a>""")
 
 
 #link to Koinos Forum Guides#
 @bot.message_handler(commands=['guides', 'docs'])
-def send_guides(message):
-    bot.send_message(chat_id, """
-⚡Koinos documentation can be found at https://docs.koinos.io
+def handle_guides(message):
+    send_message("""
+📄 <a href="https://docs.koinos.io">Official Koinos documentation</a>
 
-Bridging USDT via Chainge Finance: https://koinos-social.vercel.app/post/228/11
+🌁 <a href="https://www.youtube.com/watch?v=UFniurcWDcM">How to bridge with Chainge Finance</a>
 
-Everything You Need to Know About Mana: https://docs.koinos.io/overview/mana/
+🔮 <a href="https://docs.koinos.io/overview/mana/">Everything you need to know about Mana</a>
 """)
 
 
 #Link to Various social groups
 @bot.message_handler(commands=['international'])
-def send_international(message):
-    bot.send_message(chat_id,"""🚨Non-Official International Groups!
+def handle_international(message):
+    send_message("""🌍 Unofficial International Groups 🌏
 
-Deutsch: https://t.me/koinosgermany
-Español: https://t.me/koinoshispano
-中文: https://t.me/koinos_cn
-Italiano: https://t.me/+8KIVdg8vhIQ5ZGY0
-Persian: https://t.me/PersianKoinos
-Turkish: https://t.me/+ND37ePjNlvc4NGE0
-Russian: https://t.me/koinosnetwork_rus
-Dutch: https://t.me/KoinosNederland
+🇩🇪 <a href="https://t.me/koinosgermany">Deutsch</a>
+🇪🇸 <a href="https://t.me/koinoshispano">Español</a>
+🇨🇳 <a href="https://t.me/koinos_cn">中文</a>
+🇮🇹 <a href="https://t.me/+8KIVdg8vhIQ5ZGY0">Italiano</a>
+🇮🇷 <a href="https://t.me/PersianKoinos">Persian</a>
+🇹🇷 <a href="https://t.me/+ND37ePjNlvc4NGE0">Turkish</a>
+🇷🇺 <a href="https://t.me/koinosnetwork_rus">Russian</a>
+🇳🇱 <a href="https://t.me/KoinosNederland">Dutch</a>
 """)
 
 
 @bot.message_handler(commands=['exchange','exchanges','cex','buy'])
-def send_exchange(message):
-    bot.send_message(chait_id,"""⚡KOIN is supported on the following exchanges:
+def handle_exchanges(message):
+    send_message("""🔮 $KOIN is supported on the following exchanges
 
-Chainge (Bridge): https://dapp.chainge.finance/?fromChain=ETH&toChain=ETH&fromToken=USDT&toToken=KOIN
-Uniswap (DEX): https://app.uniswap.org/explore/tokens/ethereum/0xed11c9bcf69fdd2eefd9fe751bfca32f171d53ae
-MEXC: https://www.mexc.com/exchange/KOIN_USDT
-BingX: https://bingx.com/en/spot/KOINUSDT/
-Biconomy: https://www.biconomy.com/exchange/KOIN_USDT
-Coinstore: https://www.coinstore.com/#/spot/KOINUSDT
-LCX: https://exchange.lcx.com/trade/KOIN-EUR
-KoinDX (DEX): https://app.koindx.com/swap
+🌁 <b>Bridges</b>:
+<a href="https://dapp.chainge.finance/?fromChain=ETH&toChain=ETH&fromToken=USDT&toToken=KOIN">Chainge</a>
 
-🚨Exchange Listings are always being pursued! We cannot discuss potential or in progress exchange listings. \
+🌐 <b>DEXs</b>:
+<a href="https://app.uniswap.org/explore/tokens/ethereum/0xed11c9bcf69fdd2eefd9fe751bfca32f171d53ae">Uniswap</a>
+<a href="https://app.koindx.com/swap">KoinDX</a>
+
+📈 <b>CEXs</b>:
+<a href="https://www.mexc.com/exchange/KOIN_USDT">MEXC</a>
+<a href="https://bingx.com/en/spot/KOINUSDT/">BingX</a>
+<a href="https://www.biconomy.com/exchange/KOIN_USDT">Biconomy</a>
+<a href="https://www.coinstore.com/#/spot/KOINUSDT">Coinstore</a>
+<a href="https://exchange.lcx.com/trade/KOIN-EUR">LCX</a>
+
+🚨 Exchange Listings are always being pursued! We cannot discuss potential or in progress listings. \
 You are free to request specific exchanges but do not be disappointed when you do not receive a response.
 """)
 
 #Mana Descriptor
 @bot.message_handler(commands=['mana'])
-def send_mana(message):
-    bot.send_message(chat_id,"""
-⚡Koinos blockchain features a new concept called “mana” that is the most innovative solution to the halting problem since the invention of Ethereum’s “gas.”
-It is a property of the KOIN token that gets “consumed” as a user performs fee-less transactions,
-but that also regenerates over time (100% in 5 days).
+def hanlde_mana(message):
+    send_message("""
+🔮 Mana is behind the magic of Koinos. Every KOIN inherently contains Mana, \
+which is used when using the Koinos blockchain. And just like in video games, \
+your Mana recharges over time letting you continue to use Koinos forever!
+
+<a href="https://docs.koinos.io/overview/mana/">Learn more about Mana!</a>
 """)
 
 
 #Media Links
 @bot.message_handler(commands=['media','social'])
-def send_international(message):
-    bot.send_message(chat_id,"""
+def handle_media(message):
+    send_message("""
+🔮 <b>Official Koinos Media</b>
+<a href="https://twitter.com/koinosnetwork">Koinos Network X</a>
+<a href="https://twitter.com/TheKoinosGroup">Koinos Group X</a>
+<a href="https://discord.koinos.io">Discord</a>
+<a href="https://medium.com/koinosnetwork">Medium</a>
+<a href="https://www.youtube.com/@KoinosNetwork">YouTube</a>
 
-⚡Koinos Media Links
-Twitter: https://twitter.com/TheKoinosGroup
-Twitter: https://twitter.com/koinosnetwork
-Discord: https://discord.koinos.io
-YouTube: https://www.youtube.com/@KoinosBlockchain
-Medium: https://medium.com/koinosnetwork
+⚡ <b>Unofficial Koinos Media</b>
+<a href="https://koinosnews.com/">Koinos News</a>
+<a href="https://www.youtube.com/@motoengineer.koinos">motoengineer YouTube</a>
+<a href="https://t.me/KoinosNews">Koinos News Telegram</a>
+<a href="https://t.me/thekoinosarmy">Koinos Army Telegram</a>
 
-⚡Unofficial:
-Koinos News: https://koinosnews.com/
-motoengineer YouTube: https://www.youtube.com/@motoengineer.koinos
-Koinos Telegram News: https://t.me/KoinosNews
+Also check out /international for international communities!
 """)
 
 
 #Listing of Koinos Projects
 @bot.message_handler(commands=['projects'])
-def send_projects(message):
-    bot.send_message(chat_id,"""
-⚡Existing Koinos Projects!
+def handle_projects(message):
+    send_message("""
+🔮 Existing Koinos Projects 🔮
 
-📄dApps:
-KoinDX: http://koindx.com
-Kollections: http://kollection.app
-Koin City http://koincity.com
-Nicknames https://koinosbox.com/nicknames
-Kanvas http://kanvas-app.com
-Space Striker http://planetkoinos.com/space_striker.html
-Koinos Garden http://koinosgarden.com
+📄 <b>dApps:</b>
+<a href="https://koindx.com">KoinDX</a>
+<a href="https://kollection.app">Kollection</a>
+<a href="https://koincity.com">Koincity</a>
+<a href="https://koinosbox.com/nicknames">Nicknames</a>
+<a href="https://kanvas-app.com">Kanvas</a>
+<a href="https://planetkoinos.com/space_striker.html">Space Striker</a>
+<a href="https://koinosgarden.com">Koinos Garden</a>
 
-⛏️Mining Pools:
-Fogata: http://fogata.io
-BurnKoin: http://burnkoin.com
+⛏️ <b>Mining Pools:</b>
+<a href="https://fogata.io">Fogata</a>
+<a href="https://burnkoin.com">Burn Koin</a>
 
-🔍Block Explorers:
-Koiner: http://koiner.app
-KoinosBlocks: http://koinosblocks.com
+🔍 <b>Block Explorers:</b>
+<a href="https://koiner.app">Koiner</a>
+<a href="https://koinosblocks.com">KoinosBlocks</a>
 
-💳Wallets:
-Kondor Wallet: https://chrome.google.com/webstore/detail/kondor/ghipkefkpgkladckmlmdnadmcchefhjl
-Konio Wallet: http://konio.io
-Portal: http://portal.armana.io
+💳 <b>Wallets:</b>
+<a href="https://chrome.google.com/webstore/detail/kondor/ghipkefkpgkladckmlmdnadmcchefhjl">Kondor</a>
+<a href="https://konio.io">Konio</a>
+<a href="https://portal.armana.io">Portal</a>
 
-💻Misc:
-Koinos AI: http://planetkoinos.com/koinos_ai.html
+💻 <b>Misc:</b>
+<a href="https://planetkoinos.com/koinos_ai.html">Koinos AI</a>
 """)
 
 
 #Link to Koinos Roadmap
 @bot.message_handler(commands=['roadmap'])
-def send_roadmap(message):
-   bot.send_message(chat_id,"""
-⚡The official Koinos Network Roadmap:
+def handle_roadmap(message):
+   send_message("""
+📍 The official Koinos Network Roadmap:
+
 https://koinos.io/
 """)
 
 
 #Link to price chat and MEXC
 @bot.message_handler(commands=['price'])
-def send_price(message):
-    bot.send_message(chat_id, """🚨Please keep price chats out of this room!
-🚨To talk about price, please visit the Koinos Army Chat Group!
+def handle_price(message):
+    send_message("""🚨 Please keep price chats out of this room. \
+To talk about price, please visit the Koinos Army Chat Group!
 
-Link:⚡️https://t.me/thekoinosarmy
+<a href="https://t.me/thekoinosarmy">Koinos Army Telegram</a>
 
-💵Find the price of $KOIN here: https://www.coingecko.com/en/coins/koinos""")
+💵 Find the price of $KOIN here: https://www.coingecko.com/en/coins/koinos""")
 
 
 #Provides information about Koinos Wallets
 @bot.message_handler(commands=['wallets'])
-def send_wallets(message):
-    bot.send_message(chat_id, """🚨These are the recommended wallets to use with Koinos!🚨
+def handle_wallets(message):
+    send_message("""💳 These are the recommended wallets to use with Koinos!
 
-⚡️Kondor Wallet⚡️
-👉Browser extension wallet for Chrome and Brave
+⚡️ <b>Kondor Wallet</b> ⚡️
+👉 Browser extension wallet for Chrome and Brave
 Created by Julian Gonzalez
 Open Sourced: https://github.com/joticajulian/kondor
 Donate or sponsor Julians work:  https://github.com/sponsors/joticajulian
 Link to download: https://chrome.google.com/webstore/detail/kondor/ghipkefkpgkladckmlmdnadmcchefhjl
 
-⚡️Konio Wallet⚡️
-👉Mobile Wallet for iOS & Android
+⚡️ <b>Konio Wallet</b> ⚡️
+👉 Mobile Wallet for iOS & Android
 Created by Adriano Foschi
 Open Sourced: https://github.com/konio-io/konio-mobile
-Link to download: http://konio.io""")
+Link to download: https://konio.io""")
 
 
 #Give Claim Information
 @bot.message_handler(commands=['claim'])
-def send_claim(message):
-    bot.send_message(chat_id, """
+def handle_claim(message):
+    send_message("""
 
 ⚠️⚡️⚠️⚡️⚠️⚡️⚠️⚡️⚠️⚡️⚠️⚡️⚠️⚡️⚠️⚡️⚠️⚡️⚠️
 
@@ -288,7 +296,7 @@ CLAIM INFORMATION!
 
 ⚡️You are only eligible if you held your ERC-20 KOIN token during the snapshot. To verify, find your wallet address in this snapshot record: https://t.me/koinos_community/109226
 
-⚡️You will need a Koinos Wallet to hold your main net $KOIN tokens! Use Kondor or My Koinos Wallet
+⚡️You will need a Koinos Wallet to hold your main net $KOIN tokens! Use Kondor.
 
 ⚡️SAVE YOUR PRIVATE KEYS OR SEED PHRASES!!!!!!!!
 
@@ -302,30 +310,42 @@ CLAIM INFORMATION!
 """)
 
 def get_programs():
-    url = 'https://koinos.io/api/featured-programs'
+    url = 'https://deploy-preview-114--koinos-io.netlify.app/api/programs'
     response = requests.get(url)
     data = response.json()
-    return data
+    return data['programs']
 
 @bot.message_handler(commands=['programs'])
-def send_programs(message):
+def handle_programs(message):
     programs = get_programs()
 
     if len(programs) == 0:
-        bot.send_message("🚨There are no featured programs at this time.")
+        send_message("🚨 There are no featured programs at this time.")
         return
 
-    message = "⚡️Koinos featured programs!⚡️\n"
+    message = "🔮 Koinos featured programs!\n"
+    image = None
 
     for program in programs:
         message += """
-⚡️{name}
-👉{subtitle}
+⚡️ {title}
+👉 {subtitle}
 {shortDescription}
-{website}
-""".formatMap(program)
+{url}
+""".format_map(program)
 
-    bot.send_message(message)
+        if image == None and program['images'] != None and program['images']['banner'] != None:
+            image = program['images']['banner']
+            image = 'https://deploy-preview-114--koinos-io.netlify.app/images/eok-image.png'
+
+    if image != None:
+        message = f"""<a href="{image}">&#8205;</a>""" + message
+
+    send_message(message, True)
+
+@bot.message_handler(commands=['rules','guidelines'])
+def handle_rules(message):
+    send_message("There are no rules!\n\n...yet")
 
 bot.polling()
 
