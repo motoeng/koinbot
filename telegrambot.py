@@ -38,7 +38,7 @@ async def send_message(message, link_preview=False, html=True, chat_id=chat_id):
 @bot.message_handler(content_types=['new_chat_members'])
 @bot.message_handler(commands=['welcome'])
 async def handle_welcome(message):
-    markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True, selective=True)
     options = ['Koinos', 'Bitcoin', 'Chainge']
     random.shuffle(options)
     markup.add(*options)
@@ -46,7 +46,7 @@ async def handle_welcome(message):
     async with new_users_lock:
         new_users.add(message.from_user.id)
 
-        new_user_query = await bot.send_message(chat_id, f"Welcome {message.from_user.first_name}, what is the name of this project?", reply_markup=markup)
+        new_user_query = await bot.send_message(chat_id, f"Welcome @{message.from_user.username}, what is the name of this project?", reply_markup=markup)
         await bot.delete_message(message.chat.id, message.id)
 
     await asyncio.sleep(60)
@@ -103,7 +103,7 @@ async def welcome_new_user(user):
             has_program_image = True
             active_program_message = f"""<a href="{program['images']['banner']}">&#8205;</a>""" + active_program_message
 
-    response = f"""Welcome {user.first_name}!
+    response = f"""Welcome @{user.username}!
 
 We are glad you are here! To get started, we recommend you take a look at current /programs and take a moment to review the /rules.
 
@@ -431,26 +431,26 @@ async def handle_programs(message):
 async def handle_rules(message):
     await send_message("""Welcome to the Koinos Telegram community!
 
-We kindly ask that you follow a few rules to help foster a positive environment which will in turn foster innovation!
+Please follow these guidelines to help create a positive, innovative environment.
 
-✅ Share and discuss your projects
+✅ Share your projects, discuss features, plans, and seek feedback.
 
-✅ Focus on building and innovation
+✅ Focus on building and discussing dApps, features, and developments.
 
-✅ Embrace and give constructive feedback
+✅ Share constructive feedback that leads to improvement.
 
-✅ Have a professional and respectful tone
+✅ Maintain a professional, respectful tone to ensure valuable conversations.
 
-✅ Contribute to the ecosystem
+✅ Contribute insights, resources, and feedback to grow the ecosystem.
 
-✅ Avoid promotion of non-utility tokens and projects
+✅ Avoid promoting non-utility tokens or projects unrelated to dApps.
 
-✅ Avoid off-topic and nonsensical conversations
+✅ Keep discussions on-topic and avoid unrelated or off-topic content.
 
-✅ Politely hold each other accountable to community guidelines
+✅ Help uphold these guidelines courteously, fostering a welcoming community.
 
-For more detailed information on these rules, you can read this \
-<a href="https://docs.google.com/document/d/1-WYFlj7p3U0GG5Q5_OQPR5tzRD4WlG3FKNj4u9Lz3vQ/edit?usp=sharing">document</a>.
+📄 View complete guidelines \
+<a href="https://docs.google.com/document/d/1-WYFlj7p3U0GG5Q5_OQPR5tzRD4WlG3FKNj4u9Lz3vQ/edit?usp=sharing">here</a>.
 """)
 
 # Start polling
