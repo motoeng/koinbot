@@ -120,6 +120,10 @@ If you suspect someone is impersonating an admin, please /report them.
 
     await send_message(response, link_preview=has_program_image)
 
+@bot.message_handler(content_types=['left_chat_member'])
+async def delete_leave_message(message):
+    await bot.delete_message(message.chat.id, message.id)
+
 #list of commands
 @bot.message_handler(commands=['help'])
 async def send_help(message):
