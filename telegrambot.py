@@ -435,23 +435,23 @@ async def handle_programs(message):
 async def handle_rules(message):
     await send_message("""Welcome to the Koinos Telegram community!
 
-Please follow these guidelines to help create a positive, innovative environment.
+We kindly ask you follow these guidelines to help create a positive and innovative environment.
 
 ✅ Share your projects, discuss features, plans, and seek feedback.
 
-✅ Focus on building and discussing dApps, features, and developments.
+✅ Discuss and build dApps, features, and developments.
 
 ✅ Share constructive feedback that leads to improvement.
 
-✅ Maintain a professional, respectful tone to ensure valuable conversations.
+✅ Maintain a professional, respectful, and valuable conversations.
 
-✅ Contribute insights, resources, and feedback to grow the ecosystem.
+✅ Grow the ecosystem with insights, resources, and feedback.
 
-✅ Avoid promoting non-utility tokens or projects unrelated to dApps.
+✅ Avoid promoting non-utility tokens, projects, or dApps.
 
-✅ Keep discussions on-topic and avoid unrelated or off-topic content.
+✅ Keep discussions on-topic and avoid unrelated content.
 
-✅ Help uphold these guidelines courteously, fostering a welcoming community.
+✅ Uphold these guidelines and foster a welcoming community.
 
 📄 View complete guidelines \
 <a href="https://docs.google.com/document/d/1-WYFlj7p3U0GG5Q5_OQPR5tzRD4WlG3FKNj4u9Lz3vQ/edit?usp=sharing">here</a>.
