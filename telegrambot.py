@@ -39,12 +39,15 @@ async def send_message(message, link_preview=False, html=True, chat_id=chat_id):
 @bot.message_handler(commands=['welcome'])
 async def handle_welcome(message):
     await bot.delete_message(message.chat.id, message.id)
+    from_user = await bot.get_chat_member(message.chat.id, message.from_user.id)
 
-    new_chat_member = message.new_chat_members[0]
+    # For testing using 'welcome'
+    if message.new_chat_members == None or len(message.new_chat_members) == 0:
+        message.new_chat_members = [message.from_user]
+        from_user.status = ""
 
-    if message.from_user.id != new_chat_member.id:
-        for member in message.new_chat_members:
-            await welcome_new_user(member)
+    if from_user.status == 'creator' or from_user.status == 'administrator':
+        await welcome_new_users(message.new_chat_members)
         return
 
     markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True, selective=True)
@@ -52,22 +55,26 @@ async def handle_welcome(message):
     random.shuffle(options)
     markup.add(*options)
 
-    async with new_users_lock:
-        new_users.add(new_chat_member.id)
-
-        new_user_query = await bot.send_message(chat_id, f"Welcome @{new_chat_member.username}, what is the name of this project?", reply_markup=markup)
-
-
-    await asyncio.sleep(60)
-    try:
-        await bot.delete_message(new_user_query.chat.id, new_user_query.id)
-    except:
-        pass
+    captcha_messages = list()
 
     async with new_users_lock:
-        if {new_chat_member.id} <= new_users:
-            new_users.remove(new_chat_member.id)
-            await kick_user(new_chat_member)
+        for member in message.new_chat_members:
+            new_users.add(member.id)
+
+            captcha_messages.append(await bot.send_message(chat_id, f"Welcome @{member.username}, what is the name of this project?", reply_markup=markup))
+
+    await asyncio.sleep(180)
+    for captcha_message in captcha_messages:
+        try:
+            await bot.delete_message(captcha_message.chat.id, captcha_message.id)
+        except:
+            pass
+
+    async with new_users_lock:
+        for member in message.new_chat_members:
+            if {member.id} <= new_users:
+                new_users.remove(member.id)
+                await kick_user(member)
 
 
 @bot.message_handler(func=lambda message: message.reply_to_message != None)
@@ -85,14 +92,14 @@ async def handle_new_user_response(message):
         await kick_user(message.from_user)
         return
 
-    await welcome_new_user(message.from_user)
+    await welcome_new_users([message.from_user])
 
 
 async def kick_user(user):
     await bot.kick_chat_member(chat_id, user.id, until_date=datetime.today() + timedelta(days=7) )
 
 
-async def welcome_new_user(user):
+async def welcome_new_users(users):
     programs = get_programs()
     active_program_message = None
     has_program_image = False
@@ -111,10 +118,21 @@ async def welcome_new_user(user):
         if program['images'] != None and program['images']['banner'] != None:
             has_program_image = True
             active_program_message = f"""<a href="{program['images']['banner']}">&#8205;</a>""" + active_program_message
+    response = ""
 
-    response = f"""Welcome @{user.username}!
+    usernames =['@' + user.username for user in users]
+    if len(usernames) > 1:
+        usernames[-1] = 'and ' + usernames[-1]
 
-We are glad you are here! To get started, we recommend you take a look at current /programs and take a moment to review the /rules.
+    username_list = ''
+    if len(usernames) > 2:
+        username_list = ', '.join(usernames)
+    else:
+        username_list = ' '.join(usernames)
+
+    response = f"""Welcome {username_list}!
+
+To get started, we recommend you take a look at current /programs and take a moment to review the /rules.
 
 Please feel free to ask questions!"""
 
