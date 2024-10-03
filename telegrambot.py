@@ -27,12 +27,13 @@ def make_program_blurb(program):
 👉 {subtitle}
 {shortDescription}""".format_map(program)
 
-async def send_message(message, link_preview=False, html=True, chat_id=chat_id):
-    await bot.send_message(
+async def send_message(message, link_preview=False, html=True, chat_id=chat_id, reply_markup=None):
+    return await bot.send_message(
         chat_id,
         message,
         parse_mode='html' if html else None,
-        link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=not link_preview))
+        link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=not link_preview),
+        reply_markup=reply_markup)
 
 #welcome message
 @bot.message_handler(content_types=['new_chat_members'])
@@ -61,7 +62,7 @@ async def handle_welcome(message):
         for member in message.new_chat_members:
             new_users.add(member.id)
 
-            captcha_messages.append(await bot.send_message(chat_id, f"Welcome @{member.username}, what is the name of this project?", reply_markup=markup))
+            captcha_messages.append(await send_message(f"Welcome @{member.username}, what is the name of this project?", reply_markup=markup))
 
     await asyncio.sleep(180)
     for captcha_message in captcha_messages:
@@ -145,7 +146,7 @@ Please feel free to ask questions!"""
 If you suspect someone is impersonating an admin, please /report them.
 """
 
-    await send_message(response, link_preview=has_program_image)
+    await send_message(response, link_preview=has_program_image, reply_markup=telebot.types.ReplyKeyboardRemove(selective=True))
 
 @bot.message_handler(content_types=['left_chat_member'])
 async def delete_leave_message(message):
