@@ -38,16 +38,25 @@ async def send_message(message, link_preview=False, html=True, chat_id=chat_id):
 @bot.message_handler(content_types=['new_chat_members'])
 @bot.message_handler(commands=['welcome'])
 async def handle_welcome(message):
+    await bot.delete_message(message.chat.id, message.id)
+
+    new_chat_member = message.new_chat_members[0]
+
+    if message.from_user.id != new_chat_member.id:
+        for member in message.new_chat_members:
+            await welcome_new_user(member)
+        return
+
     markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True, selective=True)
     options = ['Koinos', 'Bitcoin', 'Chainge']
     random.shuffle(options)
     markup.add(*options)
 
     async with new_users_lock:
-        new_users.add(message.from_user.id)
+        new_users.add(new_chat_member.id)
 
-        new_user_query = await bot.send_message(chat_id, f"Welcome @{message.from_user.username}, what is the name of this project?", reply_markup=markup)
-        await bot.delete_message(message.chat.id, message.id)
+        new_user_query = await bot.send_message(chat_id, f"Welcome @{new_chat_member.username}, what is the name of this project?", reply_markup=markup)
+
 
     await asyncio.sleep(60)
     try:
@@ -56,9 +65,9 @@ async def handle_welcome(message):
         pass
 
     async with new_users_lock:
-        if {message.from_user.id} <= new_users:
-            new_users.remove(message.from_user.id)
-            await kick_user(message.from_user)
+        if {new_chat_member.id} <= new_users:
+            new_users.remove(new_chat_member.id)
+            await kick_user(new_chat_member)
 
 
 @bot.message_handler(func=lambda message: message.reply_to_message != None)
