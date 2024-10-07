@@ -36,7 +36,7 @@ async def send_message(message, link_preview=False, html=True, chat_id=chat_id, 
         reply_markup=reply_markup)
 
 #welcome message
-#@bot.message_handler(commands=['welcome'])
+@bot.message_handler(commands=['welcome'])
 @bot.message_handler(content_types=['new_chat_members'])
 async def handle_welcome(message):
     await bot.delete_message(message.chat.id, message.id)
@@ -107,18 +107,19 @@ async def welcome_new_users(users):
 
     if len(programs) > 0:
         for program in programs:
-            if not program['active']:
+            if not program['featured']:
                 continue
 
-        active_program_message = f"""
+            active_program_message = f"""
 
 🔮 Featured Program:
 
 {make_program_blurb(program)}"""
 
-        if program['images'] != None and program['images']['banner'] != None:
-            has_program_image = True
-            active_program_message = f"""<a href="{program['images']['banner']}">&#8205;</a>""" + active_program_message
+            if program['images'] != None and program['images']['banner'] != None:
+                has_program_image = True
+                active_program_message = f"""<a href="{program['images']['banner']}">&#8205;</a>""" + active_program_message
+
     response = ""
 
     usernames =['@' + user.username for user in users]
@@ -444,15 +445,23 @@ async def handle_programs(message):
         await send_message("🚨 There are no active programs at this time.")
         return
 
-    message = "🔮 Koinos active programs!\n"
+    message = ""
     image = None
 
     for program in programs:
-        message += f"""
+        program_message = f"""
+
 {make_program_blurb(program)}"""
 
-        if image == None and program['images'] != None and program['images']['banner'] != None:
+        if program['images'] != None and program['images']['banner'] != None and (image == None or program['featured']):
             image = program['images']['banner']
+
+        if program['featured']:
+            message = program_message + message
+        else:
+            message += program_message
+
+    message = "🔮 Koinos active programs!" + message
 
     if image != None:
         message = f"""<a href="{image}">&#8205;</a>""" + message
