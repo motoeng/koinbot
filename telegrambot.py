@@ -1,4 +1,5 @@
 import asyncio
+from collections import namedtuple
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
@@ -17,7 +18,7 @@ new_users = set()
 new_users_lock = asyncio.Lock()
 
 def get_programs():
-    url = 'https://koinos.io/api/programs'
+    url = 'https://deploy-preview-118--koinos-io.netlify.app/api/programs'
     response = requests.get(url)
     data = response.json()
     return data['programs']
@@ -35,22 +36,50 @@ async def send_message(message, link_preview=False, html=True, chat_id=chat_id, 
         link_preview_options=telebot.types.LinkPreviewOptions(is_disabled=not link_preview),
         reply_markup=reply_markup)
 
-#welcome message
-#@bot.message_handler(commands=['welcome'])
-@bot.message_handler(content_types=['new_chat_members'])
-async def handle_welcome(message):
-    await bot.delete_message(message.chat.id, message.id)
-    from_user = await bot.get_chat_member(message.chat.id, message.from_user.id)
 
-    # For testing using 'welcome'
-    if message.new_chat_members == None or len(message.new_chat_members) == 0:
-        message.new_chat_members = [message.from_user]
-        from_user.status = ""
-
-    if from_user.status == 'creator' or from_user.status == 'administrator':
-        await welcome_new_users(message.new_chat_members)
+# Handle new member
+@bot.chat_member_handler()
+async def handle_member(member):
+    if member.invite_link == None:
         return
 
+    await challenge_user(member.new_chat_member.user)
+
+
+# Welcome command for admin manual welcome
+@bot.message_handler(commands=['welcome'])
+async def handle_welcome(message):
+    await bot.delete_message(message.chat.id, message.id)
+
+    from_user = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if from_user.status != 'creator' and from_user.status != 'administrator':
+        return
+
+    usernames = []
+
+    for entity in message.entities:
+        if entity.type != 'mention':
+            continue
+
+        usernames.append(message.text[slice(entity.offset, entity.offset + entity.length)])
+
+    await welcome_new_users(usernames)
+
+
+# Deletes joined message
+@bot.message_handler(content_types=['new_chat_members'])
+async def handle_new_users(message):
+    await bot.delete_message(message.chat.id, message.id)
+
+
+# Challenge command for testing
+#@bot.message_handler(commands=['challenge'])
+#async def handle_challenge(message):
+#    await challenge_user(message.from_user)
+
+
+# Create user challenge
+async def challenge_user(user):
     markup = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True, selective=True)
     options = ['Koinos', 'Bitcoin', 'Chainge']
     random.shuffle(options)
@@ -59,10 +88,9 @@ async def handle_welcome(message):
     captcha_messages = list()
 
     async with new_users_lock:
-        for member in message.new_chat_members:
-            new_users.add(member.id)
+        new_users.add(user.id)
 
-            captcha_messages.append(await send_message(f"Welcome @{member.username}, what is the name of this project?", reply_markup=markup))
+        captcha_messages.append(await send_message(f"Welcome @{user.username}, what is the name of this project?", reply_markup=markup))
 
     await asyncio.sleep(180)
     for captcha_message in captcha_messages:
@@ -72,12 +100,12 @@ async def handle_welcome(message):
             pass
 
     async with new_users_lock:
-        for member in message.new_chat_members:
-            if {member.id} <= new_users:
-                new_users.remove(member.id)
-                await kick_user(member)
+        if {user.id} <= new_users:
+            new_users.remove(user.id)
+            await kick_user(user)
 
 
+# Handle user challenge
 @bot.message_handler(func=lambda message: message.reply_to_message != None)
 async def handle_new_user_response(message):
     async with new_users_lock:
@@ -93,14 +121,16 @@ async def handle_new_user_response(message):
         await kick_user(message.from_user)
         return
 
-    await welcome_new_users([message.from_user])
+    await welcome_new_users([f'@{message.from_user.username}'])
 
 
+# Kick user
 async def kick_user(user):
     await bot.kick_chat_member(chat_id, user.id, until_date=datetime.today() + timedelta(days=7) )
 
 
-async def welcome_new_users(users):
+# User welcome message
+async def welcome_new_users(usernames):
     programs = get_programs()
     active_program_message = None
     has_program_image = False
@@ -122,7 +152,6 @@ async def welcome_new_users(users):
 
     response = ""
 
-    usernames =['@' + user.username for user in users]
     if len(usernames) > 1:
         usernames[-1] = 'and ' + usernames[-1]
 
@@ -149,11 +178,14 @@ If you suspect someone is impersonating an admin, please /report them.
 
     await send_message(response, link_preview=has_program_image, reply_markup=telebot.types.ReplyKeyboardRemove(selective=True))
 
+
+# Handle user leaving messager
 @bot.message_handler(content_types=['left_chat_member'])
 async def delete_leave_message(message):
     await bot.delete_message(message.chat.id, message.id)
 
-#list of commands
+
+# List commands
 @bot.message_handler(commands=['help'])
 async def send_help(message):
     await send_message("""
@@ -445,28 +477,25 @@ async def handle_programs(message):
         await send_message("🚨 There are no active programs at this time.")
         return
 
-    message = ""
-    image = None
+    messageEntry = namedtuple("messageEntry", ["message", "has_image"])
+    messages = []
 
     for program in programs:
-        program_message = f"""
+        has_image = False
 
-{make_program_blurb(program)}"""
+        message = f"""{make_program_blurb(program)}"""
 
-        if program['images'] != None and program['images']['banner'] != None and (image == None or program['featured']):
-            image = program['images']['banner']
+        if program['images'] != None and program['images']['banner'] != None:
+            has_image = True
+            message = f"""<a href="{program['images']['banner']}">&#8205;</a>""" + message
 
         if program['featured']:
-            message = program_message + message
+            messages.insert(0, messageEntry(message, has_image))
         else:
-            message += program_message
+            messages.append(messageEntry(message, has_image))
 
-    message = "🔮 Koinos active programs!" + message
-
-    if image != None:
-        message = f"""<a href="{image}">&#8205;</a>""" + message
-
-    await send_message(message, True)
+    for entry in messages:
+        await send_message(entry.message, entry.has_image)
 
 @bot.message_handler(commands=['rules','guidelines'])
 async def handle_rules(message):
