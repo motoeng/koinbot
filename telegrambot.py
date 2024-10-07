@@ -14,11 +14,12 @@ load_dotenv()
 
 bot = AsyncTeleBot(os.environ['TELEGRAM_BOT_TOKEN'])
 chat_id = os.environ['CHAT_ID']
+koinos_io_url = os.environ['KOINOS_IO_URL']
 new_users = set()
 new_users_lock = asyncio.Lock()
 
 def get_programs():
-    url = 'https://deploy-preview-118--koinos-io.netlify.app/api/programs'
+    url = f'{koinos_io_url}/api/programs'
     response = requests.get(url)
     data = response.json()
     return data['programs']
