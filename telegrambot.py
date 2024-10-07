@@ -36,7 +36,7 @@ async def send_message(message, link_preview=False, html=True, chat_id=chat_id, 
         reply_markup=reply_markup)
 
 #welcome message
-@bot.message_handler(commands=['welcome'])
+#@bot.message_handler(commands=['welcome'])
 @bot.message_handler(content_types=['new_chat_members'])
 async def handle_welcome(message):
     await bot.delete_message(message.chat.id, message.id)
