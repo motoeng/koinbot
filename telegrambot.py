@@ -528,7 +528,7 @@ We kindly ask you follow these guidelines to help create a positive and innovati
 
 # Start polling
 async def start_polling():
-    await bot.polling(non_stop=True)
+    await bot.polling(non_stop=True, allowed_updates=['message','chat_member'])
 
 # Gracefully stop polling
 async def stop_polling():
