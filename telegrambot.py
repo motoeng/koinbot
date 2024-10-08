@@ -41,6 +41,8 @@ async def send_message(message, link_preview=False, html=True, chat_id=chat_id, 
 # Handle new member
 @bot.chat_member_handler()
 async def handle_member(member):
+    print(member)
+
     if member.invite_link == None:
         return
 
