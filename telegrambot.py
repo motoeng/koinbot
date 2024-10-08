@@ -17,6 +17,7 @@ chat_id = os.environ['CHAT_ID']
 koinos_io_url = os.environ['KOINOS_IO_URL']
 new_users = set()
 new_users_lock = asyncio.Lock()
+challenge = False
 
 def get_programs():
     url = f'{koinos_io_url}/api/programs'
@@ -52,7 +53,7 @@ async def handle_member(member_update):
 
     # If the from user is the chat owner or an admin, don't display the challenge, just the welcome message
     from_user = await bot.get_chat_member(chat_id, member_update.from_user.id)
-    if from_user.status == 'creator' or from_user.status == 'administrator':
+    if from_user.status == 'creator' or from_user.status == 'administrator' or not challenge:
         await welcome_new_users([f'@{member_update.new_chat_member.user.username}'])
         return
 
@@ -89,6 +90,32 @@ async def handle_new_users(message):
 #@bot.message_handler(commands=['challenge'])
 #async def handle_challenge(message):
 #    await challenge_user(message.from_user)
+
+
+@bot.message_handler(commands=['challenge'])
+async def handle_challenge(message):
+    global challenge
+    from_user = await bot.get_chat_member(message.chat.id, message.from_user.id)
+
+    if from_user.status != 'creator' and from_user.status != 'administrator':
+        await send_message('Only an admin can change the challenge setting')
+        return
+
+    if message.text == '/challenge on':
+        challenge = True
+        await send_message('User challenge is on.')
+    elif message.text == '/challenge off':
+        challenge = False
+        await send_message('User challenge is off.')
+    else:
+        message = 'An admin can set challenge to on or off with /challenge [on,off].\nUser challenge is '
+
+        if challenge:
+            message += 'on.'
+        else:
+            message += 'off.'
+
+        await send_message(message)
 
 
 # Create user challenge
