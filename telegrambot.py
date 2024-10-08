@@ -18,6 +18,7 @@ koinos_io_url = os.environ['KOINOS_IO_URL']
 new_users = set()
 new_users_lock = asyncio.Lock()
 challenge = False
+welcome = True
 
 def get_programs():
     url = f'{koinos_io_url}/api/programs'
@@ -63,11 +64,33 @@ async def handle_member(member_update):
 # Welcome command for admin manual welcome
 @bot.message_handler(commands=['welcome'])
 async def handle_welcome(message):
-    await bot.delete_message(message.chat.id, message.id)
+    global welcome
 
     from_user = await bot.get_chat_member(message.chat.id, message.from_user.id)
     if from_user.status != 'creator' and from_user.status != 'administrator':
+        await send_message('Only an admin can use the welcome command')
         return
+
+    if message.text == "/welcome on":
+        await send_message("Welcome message is on")
+        welcome = True
+        return
+    elif message.text == "/welcome off":
+        await send_message("Welcome message is off")
+        welcome = False
+        return
+    elif message.text == "/welcome":
+        message = 'An admin can set the welcome to on or off with /welcome [on,off].\nWelcome message is '
+
+        if welcome:
+            message += 'on.'
+        else:
+            message += 'off.'
+
+        await send_message(message)
+        return
+
+    await bot.delete_message(message.chat.id, message.id)
 
     usernames = []
 
@@ -77,7 +100,7 @@ async def handle_welcome(message):
 
         usernames.append(message.text[slice(entity.offset, entity.offset + entity.length)])
 
-    await welcome_new_users(usernames)
+    await welcome_new_users(usernames, True)
 
 
 # Deletes joined message
@@ -170,7 +193,11 @@ async def kick_user(user):
 
 
 # User welcome message
-async def welcome_new_users(usernames):
+async def welcome_new_users(usernames, force=False):
+    global welcome
+    if not welcome and not force:
+        return
+
     programs = get_programs()
     active_program_message = None
     has_program_image = False
