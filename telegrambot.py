@@ -40,13 +40,23 @@ async def send_message(message, link_preview=False, html=True, chat_id=chat_id, 
 
 # Handle new member
 @bot.chat_member_handler()
-async def handle_member(member):
-    print(member)
-
-    if member.invite_link == None:
+async def handle_member(member_update):
+    # If the user is not a member, this cannot be a join update
+    if member_update.new_chat_member.status != 'member':
         return
 
-    await challenge_user(member.new_chat_member.user)
+    # If the user's old status is not left or kicked, this cannot be a join update
+    old_status = member_update.old_chat_member.status
+    if old_status != 'left' and old_status != 'kicked':
+        return
+
+    # If the from user is the chat owner or an admin, don't display the challenge, just the welcome message
+    from_user = await bot.get_chat_member(chat_id, member_update.from_user.id)
+    if from_user.status == 'creator' or from_user.status == 'administrator':
+        await welcome_new_users([f'@{member_update.new_chat_member.user.username}'])
+        return
+
+    await challenge_user(member_update.new_chat_member.user)
 
 
 # Welcome command for admin manual welcome
