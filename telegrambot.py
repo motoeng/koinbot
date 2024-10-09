@@ -55,7 +55,10 @@ async def handle_member(member_update):
     # If the from user is the chat owner or an admin, don't display the challenge, just the welcome message
     from_user = await bot.get_chat_member(chat_id, member_update.from_user.id)
     if from_user.status == 'creator' or from_user.status == 'administrator' or not challenge:
-        await welcome_new_users([f'@{member_update.new_chat_member.user.username}'])
+        if member_update.new_chat_member.user.username != None:
+            await welcome_new_users([f'@{member_update.new_chat_member.user.username}'])
+        elif member_update.new_chat_member.user.first_name != None:
+            await welcome_new_users([member_update.new_chat_member.user.first_name])
         return
 
     await challenge_user(member_update.new_chat_member.user)
@@ -153,7 +156,14 @@ async def challenge_user(user):
     async with new_users_lock:
         new_users.add(user.id)
 
-        captcha_messages.append(await send_message(f"Welcome @{user.username}, what is the name of this project?", reply_markup=markup))
+        name = ""
+
+        if user.username != None:
+            name = f" @{user.username}"
+        elif user.first_name != None:
+            name = " " + user.first_name
+
+        captcha_messages.append(await send_message(f"Welcome{name}, what is the name of this project?", reply_markup=markup))
 
     await asyncio.sleep(180)
     for captcha_message in captcha_messages:
@@ -184,7 +194,10 @@ async def handle_new_user_response(message):
         await kick_user(message.from_user)
         return
 
-    await welcome_new_users([f'@{message.from_user.username}'])
+    if message.from_user.username != None:
+        await welcome_new_users([f'@{message.from_user.username}'])
+    elif message.from_user.first_name != None:
+        await welcome_new_users([message.from_user.first_name])
 
 
 # Kick user
