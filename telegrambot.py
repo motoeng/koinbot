@@ -256,7 +256,10 @@ Please feel free to ask questions!"""
 If you suspect someone is impersonating an admin, please /report them.
 """
 
-    await send_message(response, link_preview=has_program_image, reply_markup=telebot.types.ReplyKeyboardRemove(selective=True))
+    welcome_message = await send_message(response, link_preview=has_program_image, reply_markup=telebot.types.ReplyKeyboardRemove(selective=True))
+
+    await asyncio.sleep(180)
+    await bot.delete_message(welcome_message.chat.id, welcome_message.id)
 
 
 # Handle user leaving messager
