@@ -113,9 +113,9 @@ async def handle_new_users(message):
 
 
 # Challenge command for testing
-@bot.message_handler(commands=['test_challenge'])
-async def handle_challenge(message):
-    await challenge_user(message.from_user)
+#@bot.message_handler(commands=['test_challenge'])
+#async def handle_challenge(message):
+#    await challenge_user(message.from_user)
 
 
 @bot.message_handler(commands=['challenge'])
@@ -182,7 +182,6 @@ async def challenge_user(user):
 # Handle user challenge
 @bot.message_handler(func=lambda message: message.reply_to_message != None)
 async def handle_new_user_response(message):
-    print( message )
     async with challenge_lock:
         print( active_challenges )
         if message.from_user.id not in active_challenges:
