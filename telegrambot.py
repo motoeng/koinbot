@@ -15,8 +15,8 @@ load_dotenv()
 bot = AsyncTeleBot(os.environ['TELEGRAM_BOT_TOKEN'])
 chat_id = os.environ['CHAT_ID']
 koinos_io_url = os.environ['KOINOS_IO_URL']
-new_users = set()
-new_users_lock = asyncio.Lock()
+active_challenges = dict()
+challenge_lock = asyncio.Lock()
 challenge = False
 welcome = True
 
@@ -113,9 +113,9 @@ async def handle_new_users(message):
 
 
 # Challenge command for testing
-#@bot.message_handler(commands=['challenge'])
-#async def handle_challenge(message):
-#    await challenge_user(message.from_user)
+@bot.message_handler(commands=['test_challenge'])
+async def handle_challenge(message):
+    await challenge_user(message.from_user)
 
 
 @bot.message_handler(commands=['challenge'])
@@ -153,9 +153,7 @@ async def challenge_user(user):
 
     captcha_messages = list()
 
-    async with new_users_lock:
-        new_users.add(user.id)
-
+    async with challenge_lock:
         name = ""
 
         if user.username != None:
@@ -163,7 +161,10 @@ async def challenge_user(user):
         elif user.first_name != None:
             name = " " + user.first_name
 
-        captcha_messages.append(await send_message(f"Welcome{name}, what is the name of this project?", reply_markup=markup))
+        captcha_message = await send_message(f"Welcome{name}, what is the name of this project?", reply_markup=markup)
+
+        captcha_messages.append( captcha_message )
+        active_challenges[user.id] = captcha_message.id
 
     await asyncio.sleep(180)
     for captcha_message in captcha_messages:
@@ -172,20 +173,25 @@ async def challenge_user(user):
         except:
             pass
 
-    async with new_users_lock:
-        if {user.id} <= new_users:
-            new_users.remove(user.id)
+    async with challenge_lock:
+        if user.id in active_challenges:
+            del active_challenges[user.id]
             await kick_user(user)
 
 
 # Handle user challenge
 @bot.message_handler(func=lambda message: message.reply_to_message != None)
 async def handle_new_user_response(message):
-    async with new_users_lock:
-        if not {message.from_user.id} <= new_users:
+    print( message )
+    async with challenge_lock:
+        print( active_challenges )
+        if message.from_user.id not in active_challenges:
             return
 
-        new_users.remove(message.from_user.id)
+        if message.reply_to_message.id != active_challenges[message.from_user.id]:
+            return
+
+        del active_challenges[message.from_user.id]
 
     await bot.delete_message(message.chat.id, message.reply_to_message.id)
     await bot.delete_message(message.chat.id, message.id)
